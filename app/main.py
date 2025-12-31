@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.database import engine, Base
-from app.models import User, Wallet, Transaction
+from app.models import User, Wallet, Transaction, FraudLog
 
 app = FastAPI()
 
