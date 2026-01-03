@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, ForeignKey, String, DateTime
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from app.database import Base
 
 class FraudLog(Base):
@@ -10,3 +11,5 @@ class FraudLog(Base):
     risk_score = Column(Integer, nullable=False)
     reason = Column(String, nullable=False)
     flagged_at = Column(DateTime(timezone=True),server_default=func.now())
+    
+    transaction = relationship("Transaction", back_populates="fraud_log")
