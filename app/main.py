@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.database import engine, Base, get_db
 from app.models import User, Wallet, Transaction, FraudLog
 from app.schemas.user import UserCreate
+from app.schemas.transaction import TransactionCreate
 
 app = FastAPI()
 
@@ -31,3 +32,42 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "User and wallet created successfully", "user_id": new_user.id}
+
+@app.post("/transaction")
+def create_transaction(txn: TransactionCreate, db: Session = Depends(get_db)):
+    sender_wallet = db.query(Wallet).filter(
+        Wallet.id == txn.sender_wallet_id
+    ).first()
+    receiver_wallet = db.query(Wallet).filter(
+        Wallet.id == txn.receiver_wallet_id
+    ).first()
+    
+    if not sender_wallet or not receiver_wallet:
+        return { "error": "Invalid wallet ID"}
+    
+    if sender_wallet.balance < txn.amount:
+        transaction = Transaction(
+            sender_wallet_id = txn.sender_wallet_id,
+            receiver_wallet_id = txn.receiver_wallet_id,
+            amount=txn.amount,
+            status="BLOCKED"
+        )
+        db.add(transaction)
+        db.commit()
+        return { "message":"Insufficient balance. Transaction blocked."}
+    
+    sender_wallet.balance -= txn.amount
+    receiver_wallet.balance += txn.amount
+    
+    transaction = Transaction(
+            sender_wallet_id = txn.sender_wallet_id,
+            receiver_wallet_id = txn.receiver_wallet_id,
+            amount=txn.amount,
+            status="SUCCESS"
+        )
+    db.add(transaction)
+    db.commit()
+    return {
+        "message":"Transaction_successful",
+        "transaction_id": transaction.id
+            }
